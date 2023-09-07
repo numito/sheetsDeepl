@@ -23,7 +23,6 @@ const DEEPL_API_BASE_URL_PRO = `https://api.deepl.com/${DEEPL_API_VERSION}/`;
 
 // Threshold value of the length of the text to translate, in bytes. See https://developers.google.com/apps-script/guides/services/quotas#current_limitations
 const THRESHOLD_BYTES = 1900;
-
 /**
  * The JavaScript object of a DeepL-supported language.
  * GET request on /v2/languages returns an array of this object.
@@ -337,34 +336,33 @@ export function deepLTranslate(
   targetLocale: string
 ): string[] {
   const endpoint = 'translate';
-  let sourceTextCasted: string;
   if (!sourceText || sourceText.length === 0) {
     throw new Error(`[${ADDON_NAME}] Empty input.`);
   }
-  if (Array.isArray(sourceText)) {
-    sourceTextCasted = sourceText
-      .map((text) => `text=${encodeURIComponent(text)}`)
-      .join('&');
-  } else {
-    sourceTextCasted = `text=${encodeURIComponent(sourceText)}`;
-  }
-  // console.log(`sourceTextCasted: ${sourceTextCasted}`);
 
   // API key
   const apiKey = getDeepLApiKey();
   const baseUrl = getDeepLApiBaseUrl(apiKey);
   // Call the DeepL API
-  let url =
-    baseUrl +
-    endpoint +
-    `?auth_key=${apiKey}&target_lang=${targetLocale}&${sourceTextCasted}`;
+  let url = baseUrl + endpoint;
+    // Make a POST request with form data.
+  var formData = {
+      'auth_key': apiKey,
+      'text': sourceText,
+      'target_lang': targetLocale
+  };
   if (sourceLocale) {
-    url += `&source_lang=${sourceLocale}`;
+    formData['sourceLocale'] = sourceLocale;
   }
+  var options = {
+      'method' : "post",
+      'payload' : formData,
+      muteHttpExceptions: true
+  };
   // console.log(`url: ${url}`);
 
   // Call the DeepL API translate request
-  const response = UrlFetchApp.fetch(url, { muteHttpExceptions: true });
+  const response = UrlFetchApp.fetch(url, options);
 
   // Handle DeepL API errors
   handleDeepLErrors(response);
